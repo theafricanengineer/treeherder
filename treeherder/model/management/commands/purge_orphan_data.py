@@ -32,22 +32,20 @@ class Command(BaseCommand):
 
         self.clean_orphaned_failure_lines(options['chunk_size'])
 
-
     def clean_orphaned_failure_lines(self, chunk_size):
         results = FailureLine.objects.raw(
             """
-                SELECT failure_line.job_guid, failure_line.id 
-                FROM treeherder.failure_line 
+                SELECT failure_line.job_guid, failure_line.id
+                FROM treeherder.failure_line
                 INNER JOIN (
-                    SELECT fl.id 
+                    SELECT fl.id
                     FROM treeherder.failure_line AS fl
                     LEFT JOIN treeherder.job ON job.guid=fl.job_guid
                     WHERE job.guid IS NULL
                     ORDER BY fl.id
-                    LIMIT {chunk_size} 
+                    LIMIT {chunk_size}
                     ) jobber
-                ON jobber.id = failure_line.id
-                ;
+                ON jobber.id = failure_line.id;
             """.format(chunk_size=chunk_size))
         guids = {fl.job_guid for fl in results}
         FailureLine.objects.filter(job_guid__in=guids).delete()
